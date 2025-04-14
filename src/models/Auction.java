@@ -44,7 +44,7 @@ public class Auction {
     }
 
     public Bid getLastBidSum(UUID itemID) {
-        return Objects.requireNonNull(items.get(itemID).getLastBid());
+        return items.get(itemID).getLastBid();
     }
     public void addBid(Bid b) {
         items.get(b.itemID()).addBid(b);

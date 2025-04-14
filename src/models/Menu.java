@@ -34,9 +34,9 @@ public final class Menu {
             int type = scan.nextInt();
             if (type == 0) {
                 createAdmin();
-            } else if (type == 2) {
+            } else if (type == 1) {
                 createBidder();
-            } else if (type == 3) {
+            } else if (type == 2) {
                 createInitiator();
             } else {
                 throw new InputMismatchException("Invalid type provided");

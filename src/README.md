@@ -18,6 +18,11 @@ Operatii disponibile:
 
 ---
 
+user: be899f22-1a60-4c84-8c7b-2c39fef76ec0
+auction: 8e532376-a523-42de-8a0e-75b3c29acd8a
+card: 671651ac-18ae-4f64-828c-53af13ae29fb
+item: 14660ede-48e3-403f-bb8e-9efa91771d57
+
 ### Entities
 - auction: list of products, tax per product
 - bid: userID, bidSum, card
@@ -46,6 +51,7 @@ Operatii disponibile:
 ### To be added
 - Se termina o licitatie goala
 - Recap CRRsUD on entities (update on attributes)
+- Cannot decrease card balance lower than blocked sum
 - Cancel auction for certain product (userID, productID) -> user is admin -> rollback the blocked sums
 - Initiator should pay tax when adds items
 - Move functionalities in services
