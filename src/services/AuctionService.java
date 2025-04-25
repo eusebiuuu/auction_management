@@ -1,6 +1,7 @@
 package services;
 
 import models.Auction;
+import models.Item;
 
 import java.util.*;
 
@@ -22,8 +23,36 @@ public class AuctionService {
         return auctions.get(auctionID);
     }
 
-    public boolean removeAuction(UUID auctionId) {
-        return auctions.remove(auctionId) != null;
+    public void showAllItems() {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Insert auction ID:");
+        Auction auction = getAuction(UUID.fromString(scanner.nextLine()));
+
+        Collection<Item> items = auction.getItems();
+        for (Item i : items) {
+            System.out.println(i.toString());
+        }
+    }
+
+    public void showAllAuctions() {
+        List<Auction> auctions = getAuctions();
+        for (Auction a : auctions) {
+            System.out.println(a.toString());
+        }
+    }
+
+    public void createAuction() {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Insert auction name:");
+        String name = scanner.nextLine();
+
+        System.out.println("Insert auction fare:");
+        Double fare = scanner.nextDouble();
+
+        addAuction(new Auction(fare, name));
+        System.out.println("Auction created successfully");
     }
 
     public List<Auction> getAuctions() {

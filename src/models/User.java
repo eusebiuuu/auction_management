@@ -39,13 +39,7 @@ public class User {
 
     public void updateBlockedSum(UUID cardID, double sum, int type) {
         Card card = getCard(cardID);
-
-        if (card.getBlockedSum() + sum * type < 0) {
-            throw new RuntimeException("System error. Please try again later");
-        }
-
-        double currentBlockedSum = card.getBlockedSum();
-        card.setBlockedSum(currentBlockedSum + type * sum);
+        card.setBlockedSum(card.getBlockedSum() + type * sum);
     }
 
     public void addCard(Card newCard) {

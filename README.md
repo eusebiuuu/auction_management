@@ -16,13 +16,6 @@ Operatii disponibile:
 - Create item (auctionID, userID, fields) -> check if initiator & pay tax
 - Finish the auction for a certain product (auctionID, productID) -> check if user is admin or initiator -> payment -> checks
 
----
-
-user: be899f22-1a60-4c84-8c7b-2c39fef76ec0
-auction: 8e532376-a523-42de-8a0e-75b3c29acd8a
-card: 671651ac-18ae-4f64-828c-53af13ae29fb
-item: 14660ede-48e3-403f-bb8e-9efa91771d57
-
 ### Entities
 - auction: list of products, tax per product
 - bid: userID, bidSum, card
@@ -33,46 +26,26 @@ item: 14660ede-48e3-403f-bb8e-9efa91771d57
 
 ### Actions
 - Create user
-- Delete user (userID) -> check if admin
-- Show all users (userID) -> check if admin
-- Show all cards (userID)
-- Add card (userID)
+- Delete user
+- Show all users
+- Show all cards for a specific user
+- Add card
 - Update card balance
-- Make bid (productID, auctionID, cardID, sum) -> check if bidder -> validations & checks & block sums & rollback the previous payment
+- Make bid: check if bidder, validations, checks, block sums, rollback the previous payment
 
-- Create auction (userID) -> check if admin
+- Create auction
 - Show all auctions
 - Show all items (auctionID) (by default they are active)
-- Create item (auctionID, userID, fields) -> check if initiator & pay tax
+- Create item: check if initiator & pay tax
 - Finish the auction for a certain product (auctionID, productID) -> check if user is admin or initiator -> payment -> checks
-
+- Cancel auction for certain product (userID, productID) -> user is admin -> rollback the blocked sums
 ---
 
-### To be added
-- Se termina o licitatie goala
-- Recap CRRsUD on entities (update on attributes)
-- Cannot decrease card balance lower than blocked sum
-- Cancel auction for certain product (userID, productID) -> user is admin -> rollback the blocked sums
-- Initiator should pay tax when adds items
-- Move functionalities in services
-- Try catch blocks
-- Better checks and security in bids
-- Authentication check in menu operations
-- Validate parameters
-- Design patterns
+### Tasks
+- Testing
+- Refactor documentation
 
-Etapa I
-1) Definirea sistemului
-   Să se creeze o listă pe baza temei alese cu cel puțin 10 acțiuni/interogări care se pot face în cadrul
-   sistemului și o listă cu cel puțin 8 tipuri de obiecte.
-Aplicația va conține:
-   • clase simple cu atribute private / protected și metode de acces
-   • cel puțin 2 colecții diferite capabile să gestioneze obiectele definite anterior (eg: List, Set, Map,
-   etc.) dintre care cel puțin una sa fie sortată – se vor folosi array-uri uni/bidimensionale în cazul în care
-   nu se parcurg colecțiile pana la data checkpoint-ului.
-   • utilizare moștenire pentru crearea de clase adiționale și utilizarea lor în cadrul colecțiilor;
-   • cel puțin o clasă serviciu care să expună operațiile sistemului
-   • o clasa Main din care sunt făcute apeluri către servicii
+- Design patterns
 
 Etapa II
 5) Extindeți proiectul din prima etapă prin realizarea persistenței utilizând o bază de date relațională

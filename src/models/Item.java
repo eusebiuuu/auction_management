@@ -9,7 +9,7 @@ public class Item {
     private String description;
     private final UUID userID;
     private Boolean active;
-    private Stack<Bid> bids;
+    private final Stack<Bid> bids;
 
     public Item(String description, UUID userID) {
         itemID = UUID.randomUUID();
@@ -52,5 +52,13 @@ public class Item {
 
     public String toString() {
         return "Item: " + itemID + ", " + description + ", " + userID;
+    }
+
+    public Stack<Bid> getBids() {
+        return bids;
+    }
+
+    public UUID getUserID() {
+        return userID;
     }
 }

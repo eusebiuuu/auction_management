@@ -23,8 +23,11 @@ public class Main {
                 case 10 -> menu.finishBidding();
                 case 11 -> menu.makeBid();
                 case 12 -> menu.addSumToCard();
+                case 13 -> menu.showAllProductBids();
+                case 14 -> menu.showAllMadeBids();
+                case 15 -> menu.cancelBidding();
                 default -> {}
             }
-        } while (command != 13);
+        } while (command != 16);
     }
 }

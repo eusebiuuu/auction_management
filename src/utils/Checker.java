@@ -9,38 +9,37 @@ public class Checker {
      * @param value The integer to check
      * @param min The minimum allowed value
      * @param max The maximum allowed value
-     * @return true if the value is within range, false otherwise
+     * @return true if the value is within range
+     * @throws IllegalArgumentException if min > max
      */
     public static boolean isInRange(int value, int min, int max) {
-        try {
-            return value >= min && value <= max;
-        } catch (Exception e) {
-            handleError("Range check failed", e);
-            return false;
+        if (min > max) {
+            throw new IllegalArgumentException("Min cannot be greater than max");
         }
+        return value >= min && value <= max;
     }
 
     /**
      * Checks if a number is positive
      * @param number The number to check
-     * @return true if the number is positive, false otherwise
+     * @return true if the number is positive
+     * @throws IllegalArgumentException if number is null
      */
     public static boolean isPositive(Number number) {
-        try {
-            if (number instanceof Integer) {
-                return number.intValue() > 0;
-            } else if (number instanceof Double) {
-                return number.doubleValue() > 0;
-            } else if (number instanceof Long) {
-                return number.longValue() > 0;
-            } else if (number instanceof Float) {
-                return number.floatValue() > 0;
-            }
-            return false;
-        } catch (Exception e) {
-            handleError("Positive check failed", e);
-            return false;
+        if (number == null) {
+            throw new IllegalArgumentException("Number cannot be null");
         }
+
+        if (number instanceof Integer) {
+            return number.intValue() > 0;
+        } else if (number instanceof Double) {
+            return number.doubleValue() > 0;
+        } else if (number instanceof Long) {
+            return number.longValue() > 0;
+        } else if (number instanceof Float) {
+            return number.floatValue() > 0;
+        }
+        return false;
     }
 
     /**
@@ -49,12 +48,7 @@ public class Checker {
      * @return true if the string is not null and not empty
      */
     public static boolean isNotNullOrEmpty(String str) {
-        try {
-            return str != null && !str.trim().isEmpty();
-        } catch (Exception e) {
-            handleError("Null or empty check failed", e);
-            return false;
-        }
+        return str != null && !str.trim().isEmpty();
     }
 
     /**
@@ -62,44 +56,13 @@ public class Checker {
      * @param str The string to check
      * @param regex The regular expression pattern
      * @return true if the string matches the pattern
+     * @throws IllegalArgumentException if str or regex is null
+     * @throws java.util.regex.PatternSyntaxException if regex is invalid
      */
     public static boolean matchesPattern(String str, String regex) {
-        try {
-            return str != null && Pattern.matches(regex, str);
-        } catch (Exception e) {
-            handleError("Pattern matching failed", e);
-            return false;
+        if (str == null || regex == null) {
+            throw new IllegalArgumentException("Neither string nor regex can be null");
         }
-    }
-
-    /**
-     * Checks if a string can be parsed to a number
-     * @param str The string to check
-     * @return true if the string can be parsed to a number
-     */
-    public static boolean isNumeric(String str) {
-        try {
-            if (str == null) {
-                return false;
-            }
-            Double.parseDouble(str);
-            return true;
-        } catch (NumberFormatException e) {
-            return false;
-        } catch (Exception e) {
-            handleError("Numeric check failed", e);
-            return false;
-        }
-    }
-
-    /**
-     * Handles errors by logging them (in a real application, you might want to use a logger)
-     * @param message The error message
-     * @param e The exception
-     */
-    private static void handleError(String message, Exception e) {
-        // In a real application, use a proper logging framework
-        System.err.println(message + ": " + e.getMessage());
-        // e.printStackTrace(); // Uncomment for debugging
+        return Pattern.matches(regex, str);
     }
 }

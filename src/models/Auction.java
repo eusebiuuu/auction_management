@@ -1,5 +1,7 @@
 package models;
 
+import utils.Checker;
+
 import java.util.*;
 
 public class Auction {
@@ -8,6 +10,7 @@ public class Auction {
     private Double fare;
     private final String name;
     public Auction(Double fare, String name) {
+        Checker.isPositive(fare);
         this.fare = fare;
         this.name = name;
         auctionID = UUID.randomUUID();
