@@ -42,9 +42,7 @@ Operatii disponibile:
 ---
 
 ### Tasks
-- Testing
 - Refactor documentation
-
 - Design patterns
 
 Etapa II

@@ -21,7 +21,7 @@ public final class Menu {
         try (FileWriter file = new FileWriter(f)) {
             Auction auction = new Auction(500.0, "oifjreiog");
             User user = new Admin("Bob Smith");
-            Card card = new Card("fjrifj", 4, 50);
+            Card card = new Card("fjrifj", 4, 2026);
             Item item = new Item("forjeifjoreh", user.getUserID());
             card.setBalance(300.0);
             user.addCard(card);
@@ -259,13 +259,17 @@ public final class Menu {
             Auction auction = auctionsManager.getAuction(auctionID);
             Item item = auction.getItem(itemID);
 
-            if (item.getUserID() != user.getUserID()) {
+//            if (!item.isActive()) {
+//                throw new RuntimeException("The auction has been finished");
+//            }
+
+            if (!item.getUserID().equals(user.getUserID())) {
                 throw new AuthenticationException("You cannot access this information");
             }
 
             Stack<Bid> bids = item.getBids();
             for (Bid b : bids) {
-                System.out.println(b.bidSum());
+                System.out.println(b);
             }
         } catch (Exception e) {
             System.out.println(e.getMessage());
@@ -274,7 +278,6 @@ public final class Menu {
 
     public void showAllMadeBids() {
         try {
-            Scanner scanner = new Scanner(System.in);
             User user = usersManager.getUser(getUserID());
 
             if (!(user instanceof Admin) && !(user instanceof Bidder)) {
@@ -282,14 +285,18 @@ public final class Menu {
             }
 
             TreeSet<Bid> bids = new TreeSet<>(Comparator.comparing(Bid::bidSum));
-            for (Auction a : auctionsManager.getAuctions()) {
+            Collection<Auction> auctions = auctionsManager.getAuctions();
+            for (Auction a : auctions) {
                 Collection<Item> items = a.getItems();
+                System.out.println(a);
                 for (Item item : items) {
-                    if (item.getLastBid().userID() == user.getUserID()) {
+                    System.out.println(item);
+                    if (item.isActive() && item.getLastBid().userID().equals(user.getUserID())) {
                         bids.add(item.getLastBid());
                     }
                 }
             }
+            System.out.println(bids.size());
 
             System.out.println("Relevant bids in increasing number of bid sum:");
             for (Bid b : bids) {
