@@ -1,29 +1,48 @@
 package models;
 
-import java.util.Objects;
-import java.util.Stack;
-import java.util.UUID;
+import database.BidService;
+import database.ItemService;
+
+import java.sql.SQLException;
+import java.util.*;
 
 public class Item {
     private final UUID itemID;
     private String description;
     private final UUID userID;
-    private Boolean active;
+    private final UUID auctionID;
+    private boolean active;
     private final Stack<Bid> bids;
+    private final BidService bidService = BidService.getInstance();
+    private final ItemService itemService = ItemService.getInstance();
 
-    public Item(String description, UUID userID) {
+    public Item(String description, UUID userID, UUID auctionID) throws SQLException {
         itemID = UUID.randomUUID();
         this.description = description;
         this.userID = userID;
+        this.auctionID = auctionID;
+        this.active = true;
         this.bids = new Stack<>();
-        active = true;
+    }
+
+    public Item(String description, UUID userID, UUID auctionID, UUID itemID, boolean active) throws SQLException {
+        this.itemID = itemID;
+        this.description = description;
+        this.userID = userID;
+        this.auctionID = auctionID;
+        this.active = active;
+
+        this.bids = new Stack<>();
+        List<Bid> bidsList = bidService.getBidsForItem(this.itemID);
+        bidsList.sort(Comparator.comparing(Bid::bidSum).reversed());
+        bids.addAll(bidsList);
     }
 
     public String getDescription() {
         return description;
     }
 
-    public Boolean isActive() {
+    public boolean isActive() {
         return active;
     }
 
@@ -34,16 +53,38 @@ public class Item {
         return bids.peek();
     }
 
-    public void addBid(Bid b) {
-        bids.push(b);
+    public void addBid(Bid b) throws SQLException {
+        try {
+            bidService.create(b);
+            bids.push(b);
+        } catch (SQLException e) {
+            throw new SQLException("Bid creation failed: " + e.getMessage());
+        }
     }
 
-    public void setDescription(String description) {
-        this.description = description;
+    public void removeLastBid() {
+        bids.pop();
     }
 
-    public void finishBidding() {
-        this.active = false;
+    public void setDescription(String description) throws SQLException {
+        String oldDescription = this.description;
+        try {
+            this.description = description;
+            itemService.update(this);
+        } catch (Exception e) {
+            this.description = oldDescription;
+            throw new SQLException(e.getMessage());
+        }
+    }
+
+    public void finishBidding() throws SQLException {
+        try {
+            this.active = false;
+            itemService.update(this);
+        } catch (Exception e) {
+            this.active = true;
+            throw new SQLException(e.getMessage());
+        }
     }
 
     public UUID getItemID() {
@@ -60,5 +101,13 @@ public class Item {
 
     public UUID getUserID() {
         return userID;
+    }
+
+    public void rollbackBidding() {
+        this.active = true;
+    }
+
+    public UUID getAuctionID() {
+        return auctionID;
     }
 }

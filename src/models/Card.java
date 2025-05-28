@@ -1,8 +1,9 @@
 package models;
 
+import database.CardService;
 import utils.Checker;
 
-import java.time.Month;
+import java.sql.SQLException;
 import java.time.YearMonth;
 import java.util.InputMismatchException;
 import java.util.UUID;
@@ -14,8 +15,10 @@ public class Card {
     private final Integer expirationYear;
     private Double balance;
     private Double blockedSum;
+    private final UUID userID;
+    private final CardService cardService = CardService.getInstance();
 
-    public Card(String holderName, Integer expirationMonth, Integer expirationYear) {
+    public Card(String holderName, Integer expirationMonth, Integer expirationYear, UUID userID) {
         this.expirationMonth = expirationMonth;
         this.expirationYear = expirationYear;
         checkCardValidity();
@@ -25,6 +28,18 @@ public class Card {
 
         this.balance = 0.0;
         this.blockedSum = 0.0;
+        this.userID = userID;
+    }
+
+    public Card(String holderName, Integer expirationMonth, Integer expirationYear,
+                UUID userID, double blockedSum, double balance, UUID code) {
+        this.expirationMonth = expirationMonth;
+        this.expirationYear = expirationYear;
+        this.code = code;
+        this.holderName = holderName;
+        this.balance = balance;
+        this.blockedSum = blockedSum;
+        this.userID = userID;
     }
 
     public void checkCardValidity() {
@@ -64,17 +79,44 @@ public class Card {
         return blockedSum;
     }
 
-    public void setBalance(Double balance) {
+    public void setBalance(Double balance) throws SQLException {
         if (balance < 0) {
             throw new InputMismatchException("You cannot have debt in this type of card");
         }
         if (balance < blockedSum) {
             throw new InputMismatchException("New balance is not allowed since you have a bigger blocked sum");
         }
-        this.balance = balance;
+        double oldBalance = this.balance;
+        try {
+            this.balance = balance;
+            cardService.update(this);
+        } catch (SQLException e) {
+            this.balance = oldBalance;
+            throw new SQLException("Balance update failed: " + e.getMessage());
+        }
     }
 
-    public void setBlockedSum(Double blockedSum) {
+    public void setBlockedSum(Double blockedSum) throws SQLException {
+        if (blockedSum < 0) {
+            throw new RuntimeException("System error - blockedSum is negative. Please try again later");
+        }
+
+        if (blockedSum > balance) {
+            System.out.println(this);
+            throw new InputMismatchException("You don't have enough available money to bid on this card");
+        }
+
+        double oldSum = this.blockedSum;
+        try {
+            this.blockedSum = blockedSum;
+            cardService.update(this);
+        } catch (SQLException e) {
+            this.blockedSum = oldSum;
+            throw new SQLException("Blocked sum update failed: " + e.getMessage());
+        }
+    }
+
+    public void setBlockedSumNoTransactions(Double blockedSum) {
         if (blockedSum < 0) {
             throw new RuntimeException("System error. Please try again later");
         }
@@ -82,11 +124,13 @@ public class Card {
         if (blockedSum > balance) {
             throw new InputMismatchException("You don't have enough available money to bid on this card");
         }
-
-        this.blockedSum = blockedSum;
     }
 
     public String toString() {
         return "Card: " + code + ", " + holderName + ", " + balance + ", " + blockedSum;
+    }
+
+    public UUID getUserID() {
+        return userID;
     }
 }

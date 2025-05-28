@@ -5,11 +5,24 @@ import java.util.Scanner;
 public class Main {
     public static void main(String[] args) {
         Scanner scan = new Scanner(System.in);
-        Menu menu = Menu.getInstance();
+
+        Menu menu;
+        try {
+            menu = Menu.getInstance();
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            return;
+        }
+
         int command;
         do {
             menu.printMenu();
-            command = scan.nextInt();
+            try {
+                command = scan.nextInt();
+            } catch (Exception e) {
+                command = 16;
+                System.out.println(e.getMessage());
+            }
             switch (command) {
                 case 1 -> menu.createUser();
                 case 2 -> menu.deleteUser();

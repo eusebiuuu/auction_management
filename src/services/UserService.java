@@ -1,19 +1,45 @@
 package services;
 
+import database.GenericRepository;
 import models.*;
 
 import javax.naming.AuthenticationException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
-public class UserService {
+public class UserService extends GenericRepository<User> {
     private final HashMap<UUID, User> users;
+    private static UserService instance;
 
-    public UserService() {
+    private UserService() throws SQLException {
+        super();
         this.users = new HashMap<>();
+        try {
+            List<User> usersList = this.readAll();
+            for (User u : usersList) {
+                this.users.put(u.getUserID(), u);
+            }
+        } catch (SQLException e) {
+            throw new SQLException("Users extraction failed: " + e.getMessage());
+        }
+    }
+
+    public static synchronized UserService getInstance() throws SQLException {
+        if (instance == null) {
+            instance = new UserService();
+        }
+        return instance;
     }
 
     public void addUser(User user) {
         users.put(user.getUserID(), user);
+        try {
+            this.create(user);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to persist user to database: " + e.getMessage());
+        }
     }
 
     public User getUser(UUID userID) {
@@ -24,28 +50,28 @@ public class UserService {
         return user;
     }
 
-    public void createBidder() {
+    public void createBidder() throws SQLException {
         Scanner scan = new Scanner(System.in);
         System.out.println("Insert bidder full name:");
         String username = scan.nextLine();
         addUser(new Bidder(username));
     }
 
-    public void createInitiator() {
+    public void createInitiator() throws SQLException {
         Scanner scan = new Scanner(System.in);
         System.out.println("Insert initiator full name:");
         String username = scan.nextLine();
         addUser(new Initiator(username));
     }
 
-    public void createAdmin() {
+    public void createAdmin() throws SQLException {
         Scanner scan = new Scanner(System.in);
         System.out.println("Insert admin full name:");
         String username = scan.nextLine();
         addUser(new Admin(username));
     }
 
-    public void createUser() {
+    public void createUser() throws SQLException {
         Scanner scan = new Scanner(System.in);
         System.out.println("Insert user type (0 - admin, 1 - bidder, 2 - initiator):");
         int type = scan.nextInt();
@@ -66,11 +92,19 @@ public class UserService {
         System.out.println("Insert user ID:");
         UUID userID = UUID.fromString(scan.nextLine());
 
-        if (!(author instanceof Admin) && author.getUserID() != userID) {
+        if (!(author instanceof Admin) && authorID != userID) {
             throw new AuthenticationException("You are not allow to perform this operation");
         }
-        if (users.remove(author.getUserID()) == null) {
+        User user = users.get(userID);
+        if (users.remove(userID) == null) {
             throw new RuntimeException("No user with the given ID exists");
+        }
+
+        try {
+            this.delete(authorID);
+        } catch (Exception e) {
+            users.put(userID, user);
+            throw new RuntimeException("Failed to persist user to database: " + e.getMessage());
         }
 
         System.out.println("User deleted successfully");
@@ -83,7 +117,7 @@ public class UserService {
         }
     }
 
-    public void createCard(UUID userID) {
+    public void createCard(UUID userID) throws SQLException {
         User user = getUser(userID);
 
         Scanner scan = new Scanner(System.in);
@@ -98,7 +132,7 @@ public class UserService {
         System.out.println("Expiration year:");
         Integer year = scan.nextInt();
 
-        user.addCard(new Card(holderName, month, year));
+        user.addCard(new Card(holderName, month, year, userID));
     }
 
     public void showAllUsers(UUID userID) throws AuthenticationException {
@@ -115,5 +149,58 @@ public class UserService {
 
     public List<User> getAllUsers() {
         return new ArrayList<>(users.values());
+    }
+    @Override
+    protected String getTableName() {
+        return "users";
+    }
+
+    @Override
+    protected User mapResultSetToEntity(ResultSet resultSet) throws SQLException {
+        UUID userId = resultSet.getObject("user_id", UUID.class);
+        String fullName = resultSet.getString("full_name");
+        UserRole role = UserRole.valueOf(resultSet.getString("role"));
+
+        if (role == UserRole.ADMIN) {
+            return new Admin(fullName, userId);
+        } else if (role == UserRole.BIDDER) {
+            return new Bidder(fullName, userId);
+        } else if (role == UserRole.INITIATOR) {
+            return new Initiator(fullName, userId);
+        } else {
+            throw new InputMismatchException("The user role is invalid");
+        }
+    }
+
+    @Override
+    protected PreparedStatement createInsertStatement(User user) throws SQLException {
+        String sql = "INSERT INTO users (user_id, full_name, role) VALUES (?, ?, ?)";
+        PreparedStatement statement = connection.prepareStatement(sql);
+        statement.setObject(1, user.getUserID());
+        statement.setString(2, user.getFullName());
+        statement.setString(3, user.getRole().toString());
+        return statement;
+    }
+
+    @Override
+    protected PreparedStatement createUpdateStatement(User user) throws SQLException {
+        String sql = "UPDATE users SET full_name = ?, role = ? WHERE user_id = ?";
+        PreparedStatement statement = connection.prepareStatement(sql);
+        statement.setString(1, user.getFullName());
+        statement.setString(2, user.getRole().toString());
+        statement.setObject(3, user.getUserID());
+        return statement;
+    }
+
+    public User findByFullName(String fullName) throws SQLException {
+        String sql = "SELECT * FROM users WHERE full_name = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setString(1, fullName);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return mapResultSetToEntity(resultSet);
+            }
+            return null;
+        }
     }
 }

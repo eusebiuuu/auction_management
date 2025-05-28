@@ -1,11 +1,14 @@
 package models;
 
+import database.DatabaseConnection;
 import services.AuctionService;
 import services.UserService;
 
 import javax.naming.AuthenticationException;
 import java.io.File;
 import java.io.FileWriter;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.*;
 
 public final class Menu {
@@ -13,32 +16,42 @@ public final class Menu {
     private final AuctionService auctionsManager;
     private final UserService usersManager;
 
-    private Menu() {
-        this.auctionsManager = new AuctionService();
-        this.usersManager = new UserService();
-        File f = new File("src/output.txt");
+    private Menu() throws SQLException {
+        this.auctionsManager = AuctionService.getInstance();
+        this.usersManager = UserService.getInstance();
 
-        try (FileWriter file = new FileWriter(f)) {
-            Auction auction = new Auction(500.0, "oifjreiog");
-            User user = new Admin("Bob Smith");
-            Card card = new Card("fjrifj", 4, 2026);
-            Item item = new Item("forjeifjoreh", user.getUserID());
-            card.setBalance(300.0);
-            user.addCard(card);
-            auction.addItem(item);
-            auctionsManager.addAuction(auction);
-            usersManager.addUser(user);
-
-            file.write("Auction ID: " + auction.getAuctionID() + "\n");
-            file.write("Card ID: " + card.getCode() + "\n");
-            file.write("User ID: " + user.getUserID() + "\n");
-            file.write("Item ID: " + item.getItemID() + "\n");
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
+//        File f = new File("src/output.txt");
+//        Connection connection = DatabaseConnection.getInstance().getConnection();
+//
+//        try (FileWriter file = new FileWriter(f)) {
+//            connection.setAutoCommit(false);
+//            Auction auction = new Auction(500.0, "oifjreiog");
+//            auctionsManager.addAuction(auction);
+//
+//            User user = new Admin("Bob Smith");
+//            usersManager.addUser(user);
+//
+//            Card card = new Card("fjrifj", 4, 2026, user.getUserID());
+//            Item item = new Item("forjeifjoreh", user.getUserID(), auction.getAuctionID());
+//
+//            card.setBalance(300.0);
+//            user.addCard(card);
+//            auction.addItem(item);
+//
+//            file.write("Auction ID: " + auction.getAuctionID() + "\n");
+//            file.write("Card ID: " + card.getCode() + "\n");
+//            file.write("User ID: " + user.getUserID() + "\n");
+//            file.write("Item ID: " + item.getItemID() + "\n");
+//            connection.commit();
+//        } catch (Exception e) {
+//            connection.rollback();
+//            System.out.println(e.getMessage());
+//        } finally {
+//            connection.setAutoCommit(true);
+//        }
     }
 
-    public static Menu getInstance() {
+    public static Menu getInstance() throws SQLException {
         if (instance == null) {
             synchronized (Menu.class) {
                 if (instance == null) {
@@ -127,13 +140,37 @@ public final class Menu {
             UUID cardID = UUID.fromString(scan.nextLine());
             currentUser.getCard(cardID);
 
-            if (lastBid != null) {
-                User lastBidder = usersManager.getUser(lastBid.userID());
-                lastBidder.updateBlockedSum(lastBid.cardID(), lastBid.bidSum(), -1);
-            }
+            User lastBidder = lastBid != null ? usersManager.getUser(lastBid.userID()) : null;
 
-            currentUser.updateBlockedSum(cardID, bidSum, 1);
-            auction.addBid(new Bid(UUID.randomUUID(), item.getItemID(), userID, bidSum, cardID));
+            Connection connection = DatabaseConnection.getInstance().getConnection();
+            connection.setAutoCommit(false);
+
+            boolean freeBlockedSum = false, addBlockedSum = false, addBid = false;
+            try {
+                if (lastBidder != null) {
+                    lastBidder.updateBlockedSum(lastBid.cardID(), lastBid.bidSum(), -1);
+                    freeBlockedSum = true;
+                }
+                currentUser.updateBlockedSum(cardID, bidSum, 1);
+                addBlockedSum = true;
+                auction.addBid(new Bid(UUID.randomUUID(), item.getItemID(), userID, bidSum, cardID));
+                addBid = true;
+                connection.commit();
+            } catch (Exception e) {
+                connection.rollback();
+                if (freeBlockedSum) {
+                    lastBidder.updateBlockedSumNoTransactions(lastBid.cardID(), lastBid.bidSum(), 1);
+                }
+                if (addBlockedSum) {
+                    currentUser.updateBlockedSumNoTransactions(cardID, bidSum, -1);
+                }
+                if (addBid) {
+                    auction.removeBid(item.getItemID());
+                }
+                throw new Exception(e.getMessage());
+            } finally {
+                connection.setAutoCommit(true);
+            }
 
             System.out.println("Bid processed successfully");
         } catch (Exception e) {
@@ -190,7 +227,7 @@ public final class Menu {
             Card card = user.getCard(UUID.fromString(scanner.nextLine()));
             card.setBalance(card.getBalance() - auction.getFare());
 
-            auction.addItem(new Item(description, user.getUserID()));
+            auction.addItem(new Item(description, user.getUserID(), auction.getAuctionID()));
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -217,10 +254,30 @@ public final class Menu {
                 return;
             }
 
-            User lastUser = usersManager.getUser(lastBid.userID());
-            lastUser.updateBlockedSum(lastBid.cardID(), lastBid.bidSum(), -1);
             Card card = user.getCard(lastBid.cardID());
-            card.setBalance(card.getBalance() - lastBid.bidSum());
+            User lastUser = usersManager.getUser(lastBid.userID());
+            Connection connection = DatabaseConnection.getInstance().getConnection();
+            boolean updateBlockedSum = false, updateBalance = false;
+
+            try {
+                connection.setAutoCommit(false);
+                lastUser.updateBlockedSum(lastBid.cardID(), lastBid.bidSum(), -1);
+                updateBlockedSum = true;
+                card.setBalance(card.getBalance() - lastBid.bidSum());
+                updateBalance = true;
+                connection.commit();
+            } catch (Exception e) {
+                connection.rollback();
+                if (updateBlockedSum) {
+                    lastUser.updateBlockedSumNoTransactions(lastBid.cardID(), lastBid.bidSum(), 1);
+                }
+                if (updateBalance) {
+                    card.setBalance(card.getBalance() + lastBid.bidSum());
+                }
+                throw new Exception(e.getMessage());
+            } finally {
+                connection.setAutoCommit(true);
+            }
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -259,9 +316,9 @@ public final class Menu {
             Auction auction = auctionsManager.getAuction(auctionID);
             Item item = auction.getItem(itemID);
 
-//            if (!item.isActive()) {
-//                throw new RuntimeException("The auction has been finished");
-//            }
+            if (!item.isActive()) {
+                throw new RuntimeException("The auction for this item has been finished");
+            }
 
             if (!item.getUserID().equals(user.getUserID())) {
                 throw new AuthenticationException("You cannot access this information");
@@ -288,9 +345,7 @@ public final class Menu {
             Collection<Auction> auctions = auctionsManager.getAuctions();
             for (Auction a : auctions) {
                 Collection<Item> items = a.getItems();
-                System.out.println(a);
                 for (Item item : items) {
-                    System.out.println(item);
                     if (item.isActive() && item.getLastBid().userID().equals(user.getUserID())) {
                         bids.add(item.getLastBid());
                     }
@@ -324,13 +379,33 @@ public final class Menu {
 
             Auction auction = auctionsManager.getAuction(auctionID);
             Item item = auction.getItem(itemID);
-            item.finishBidding();
-
             Bid lastBid = item.getLastBid();
             User lastBidder = usersManager.getUser(lastBid.userID());
             double sum = lastBid.bidSum();
             UUID cardID = lastBid.cardID();
-            lastBidder.updateBlockedSum(cardID, sum, -1);
+            Connection connection = DatabaseConnection.getInstance().getConnection();
+            boolean finishBidding = false, updateBlockedSum = false;
+
+            try {
+                connection.setAutoCommit(false);
+                item.finishBidding();
+                finishBidding = true;
+                lastBidder.updateBlockedSum(cardID, sum, -1);
+                updateBlockedSum = true;
+                connection.commit();
+            } catch (Exception e) {
+                connection.rollback();
+                if (finishBidding) {
+                    item.rollbackBidding();
+                }
+                if (updateBlockedSum) {
+                    lastBidder.updateBlockedSumNoTransactions(cardID, sum, 1);
+                }
+                throw new SQLException(e.getMessage());
+            } finally {
+                connection.setAutoCommit(true);
+            }
+
         } catch(Exception e) {
             System.out.println(e.getMessage());
         }
