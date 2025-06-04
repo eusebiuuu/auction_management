@@ -1,23 +1,28 @@
 package database;
 
+import utils.EnvLoader;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Map;
 
 public class DatabaseConnection {
     private static DatabaseConnection instance;
-    private Connection connection;
-    private static final String URL = "jdbc:postgresql://localhost:5432/postgres";
-    private static final String USER = "postgres";
-    private static final String PASSWORD = "postgres";
+    private final Connection connection;
 
     private DatabaseConnection() {
+        Map<String, String> env = EnvLoader.loadEnv(".env");
+        String url = env.get("DB_URL");
+        String user = env.get("DB_USER");
+        String password = env.get("DB_PASSWORD");
+
         try {
             Class.forName("org.postgresql.Driver");
-            this.connection = DriverManager.getConnection(URL, USER, PASSWORD);
+            connection = DriverManager.getConnection(url, user, password);
             System.out.println("Database connection established");
-        } catch (ClassNotFoundException | SQLException e) {
-            System.err.println("Database Connection Creation Failed: " + e.getMessage());
+        } catch (SQLException | ClassNotFoundException e) {
+            throw new RuntimeException("Failed to connect to DB: " + e.getMessage(), e);
         }
     }
 

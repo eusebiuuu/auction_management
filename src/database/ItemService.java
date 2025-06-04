@@ -1,5 +1,6 @@
 package database;
 
+import models.Auction;
 import models.Item;
 
 import java.sql.*;
@@ -31,21 +32,23 @@ public class ItemService extends GenericRepository<Item> {
         UUID itemId = resultSet.getObject("item_id", UUID.class);
         String description = resultSet.getString("description");
         UUID userId = resultSet.getObject("user_id", UUID.class);
+        UUID cardId = resultSet.getObject("card_id", UUID.class);
         UUID auctionId = resultSet.getObject("auction_id", UUID.class);
         boolean active = resultSet.getBoolean("active");
 
-        return new Item(description, userId, auctionId, itemId, active);
+        return new Item(description, userId, cardId, auctionId, itemId, active);
     }
 
     @Override
     protected PreparedStatement createInsertStatement(Item item) throws SQLException {
-        String sql = "INSERT INTO items (item_id, description, user_id, active, auction_id) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO items (item_id, description, user_id, active, card_id, auction_id) VALUES (?, ?, ?, ?, ?, ?)";
         PreparedStatement statement = connection.prepareStatement(sql);
         statement.setObject(1, item.getItemID());
         statement.setString(2, item.getDescription());
         statement.setObject(3, item.getUserID());
         statement.setBoolean(4, item.isActive());
-        statement.setObject(5, item.getAuctionID());
+        statement.setObject(5, item.getCardID());
+        statement.setObject(6, item.getAuctionID());
         return statement;
     }
 
@@ -59,12 +62,12 @@ public class ItemService extends GenericRepository<Item> {
         return statement;
     }
 
-    public void finishBidding(UUID itemId) throws SQLException {
-        String sql = "UPDATE items SET active = false WHERE item_id = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setObject(1, itemId);
-            statement.executeUpdate();
-        }
+    @Override
+    protected PreparedStatement createDeleteStatement(UUID itemID) throws SQLException {
+        String sql = "DELETE FROM items WHERE item_id = ?";
+        PreparedStatement statement = connection.prepareStatement(sql);
+        statement.setObject(1, itemID);
+        return statement;
     }
 
     public List<Item> getActiveItems(UUID auctionID) throws SQLException {

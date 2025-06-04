@@ -32,11 +32,13 @@ CREATE TABLE items (
     item_id UUID PRIMARY KEY,
     user_id UUID NOT NULL,
     auction_id UUID NOT NULL,
+    card_id UUID NOT NULL,
     description TEXT NOT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (auction_id) REFERENCES auctions(auction_id) ON DELETE CASCADE
+    FOREIGN KEY (auction_id) REFERENCES auctions(auction_id) ON DELETE CASCADE,
+    FOREIGN KEY (card_id) REFERENCES cards(card_id) ON DELETE CASCADE
 );
 
 CREATE TABLE bids (

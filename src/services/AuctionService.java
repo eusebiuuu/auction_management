@@ -1,9 +1,15 @@
 package services;
 
+import database.BidService;
+import database.DatabaseConnection;
 import database.GenericRepository;
+import database.ItemService;
 import models.Auction;
+import models.Bid;
 import models.Item;
+import models.User;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,10 +19,16 @@ import java.util.*;
 
 public class AuctionService extends GenericRepository<Auction> {
     private final HashMap<UUID, Auction> auctions;
+    private final BidService bidManager;
+    private final ItemService itemManager;
+    private final UserService usersManager;
 
     public AuctionService() throws SQLException {
         super();
         this.auctions = new HashMap<>();
+        bidManager = BidService.getInstance();
+        itemManager = ItemService.getInstance();
+        usersManager = UserService.getInstance();
         try {
             List<Auction> auctionsList = this.readAll();
             for (Auction a : auctionsList) {
@@ -44,6 +56,52 @@ public class AuctionService extends GenericRepository<Auction> {
             throw new RuntimeException("Failed to persist auction to database: " + e.getMessage());
         }
         auctions.put(auction.getAuctionID(), auction);
+    }
+
+    public void deleteAuction(UUID auctionID) throws SQLException {
+        Auction auction = getAuction(auctionID);
+        for (Item item : auction.getItems()) {
+            this.cancelBidding(auctionID, item.getItemID());
+            for (Bid bid : item.getBids()) {
+                bidManager.delete(bid.bidID());
+            }
+            itemManager.delete(item.getItemID());
+        }
+        this.delete(auctionID);
+    }
+
+    public void cancelBidding(UUID auctionID, UUID itemID) throws SQLException {
+        Auction auction = this.getAuction(auctionID);
+        Item item = auction.getItem(itemID);
+        Bid lastBid = item.getLastBid();
+        if (lastBid == null) {
+            return;
+        }
+        User lastBidder = usersManager.getUser(lastBid.userID());
+        double sum = lastBid.bidSum();
+        UUID cardID = lastBid.cardID();
+        Connection connection = DatabaseConnection.getInstance().getConnection();
+        boolean finishBidding = false, updateBlockedSum = false;
+
+        try {
+            connection.setAutoCommit(false);
+            item.finishBidding();
+            finishBidding = true;
+            lastBidder.updateBlockedSum(cardID, sum, -1);
+            updateBlockedSum = true;
+            connection.commit();
+        } catch (Exception e) {
+            connection.rollback();
+            if (finishBidding) {
+                item.rollbackBidding();
+            }
+            if (updateBlockedSum) {
+                lastBidder.updateBlockedSumNoTransactions(cardID, sum, 1);
+            }
+            throw new SQLException(e.getMessage());
+        } finally {
+            connection.setAutoCommit(true);
+        }
     }
 
     public Auction getAuction(UUID auctionID) {
@@ -120,6 +178,14 @@ public class AuctionService extends GenericRepository<Auction> {
         statement.setString(1, auction.getName());
         statement.setDouble(2, auction.getFare());
         statement.setObject(3, auction.getAuctionID());
+        return statement;
+    }
+
+    @Override
+    protected PreparedStatement createDeleteStatement(UUID auctionID) throws SQLException {
+        String sql = "DELETE FROM auctions WHERE auction_id = ?";
+        PreparedStatement statement = connection.prepareStatement(sql);
+        statement.setObject(1, auctionID);
         return statement;
     }
 }

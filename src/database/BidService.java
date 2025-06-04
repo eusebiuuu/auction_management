@@ -1,6 +1,7 @@
 package database;
 
 import database.GenericRepository;
+import models.Auction;
 import models.Bid;
 
 import java.sql.*;
@@ -53,6 +54,14 @@ public class BidService extends GenericRepository<Bid> {
     @Override
     protected PreparedStatement createUpdateStatement(Bid bid) throws UnsupportedOperationException {
         throw new UnsupportedOperationException("Update operation in bids is not supported");
+    }
+
+    @Override
+    protected PreparedStatement createDeleteStatement(UUID bidID) throws SQLException {
+        String sql = "DELETE FROM bids WHERE bid_id = ?";
+        PreparedStatement statement = connection.prepareStatement(sql);
+        statement.setObject(1, bidID);
+        return statement;
     }
 
     public List<Bid> getBidsForItem(UUID itemId) throws SQLException {

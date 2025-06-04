@@ -192,6 +192,14 @@ public class UserService extends GenericRepository<User> {
         return statement;
     }
 
+    @Override
+    protected PreparedStatement createDeleteStatement(UUID userID) throws SQLException {
+        String sql = "DELETE FROM users WHERE user_id = ?";
+        PreparedStatement statement = connection.prepareStatement(sql);
+        statement.setObject(1, userID);
+        return statement;
+    }
+
     public User findByFullName(String fullName) throws SQLException {
         String sql = "SELECT * FROM users WHERE full_name = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {

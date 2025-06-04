@@ -1,0 +1,10 @@
+Auction ID: 4f92225c-07ac-4b3e-a079-bdc27499c794
+Card ID: 6e2da6de-1c97-404d-b0be-351fa916a573
+User ID: be81205a-6191-4815-a113-cec6db5c30bc
+Item ID: 1de3a7f7-bbf3-4eef-b50e-8c36f49340bc
+
+Initiator: 9f29214e-b4f7-4e0e-95bf-92f4d0c0a729
+Card: 14e83f4b-3014-41c4-85ad-9338d12d89b7
+
+Bidder: 9f66178f-0490-499e-a1f3-ca9969511ef9
+Card: 9ff17f52-676d-4af3-83a2-1aeb18588f0c

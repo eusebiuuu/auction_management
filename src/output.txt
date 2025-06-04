@@ -1,4 +1,0 @@
-Auction ID: a2e58ab5-1b0b-4e08-be46-b6d64023cab5
-Card ID: 6e2da6de-1c97-404d-b0be-351fa916a573
-User ID: be81205a-6191-4815-a113-cec6db5c30bc
-Item ID: 3c0ac4fb-de73-4682-8193-faecb5e164e3

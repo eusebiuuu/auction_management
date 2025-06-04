@@ -20,6 +20,8 @@ public abstract class GenericRepository<T> {
     protected abstract PreparedStatement createInsertStatement(T entity) throws SQLException;
     protected abstract PreparedStatement createUpdateStatement(T entity) throws SQLException;
 
+    protected abstract PreparedStatement createDeleteStatement(UUID id) throws SQLException;
+
     public void create(T entity) throws SQLException {
         try (PreparedStatement statement = createInsertStatement(entity)) {
             statement.executeUpdate();
@@ -75,13 +77,10 @@ public abstract class GenericRepository<T> {
     }
 
     public void delete(UUID id) throws SQLException {
-        String sql = "DELETE FROM " + getTableName() + " WHERE id = ?";
-
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setObject(1, id);
+        try (PreparedStatement statement = createDeleteStatement(id)) {
             statement.executeUpdate();
         } catch (SQLException e) {
-            throw new SQLException("Error deleting entity: " + e.getMessage());
+            throw new SQLException("Error deleting entity: " + e.getMessage() + getTableName());
         }
 
         AuditService.getInstance().logAction("delete " + getTableName());

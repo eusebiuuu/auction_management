@@ -20,7 +20,7 @@ public class Main {
             try {
                 command = scan.nextInt();
             } catch (Exception e) {
-                command = 16;
+                command = 17;
                 System.out.println(e.getMessage());
             }
             switch (command) {
@@ -39,8 +39,9 @@ public class Main {
                 case 13 -> menu.showAllProductBids();
                 case 14 -> menu.showAllMadeBids();
                 case 15 -> menu.cancelBidding();
+                case 16 -> menu.deleteAuction();
                 default -> {}
             }
-        } while (command != 16);
+        } while (command != 17);
     }
 }

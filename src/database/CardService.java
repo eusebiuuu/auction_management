@@ -1,5 +1,6 @@
 package database;
 
+import models.Auction;
 import models.Card;
 
 import java.sql.*;
@@ -66,6 +67,14 @@ public class CardService extends GenericRepository<Card> {
         statement.setDouble(1, card.getBalance());
         statement.setDouble(2, card.getBlockedSum());
         statement.setObject(3, card.getCode());
+        return statement;
+    }
+
+    @Override
+    protected PreparedStatement createDeleteStatement(UUID cardID) throws SQLException {
+        String sql = "DELETE FROM cards WHERE card_id = ?";
+        PreparedStatement statement = connection.prepareStatement(sql);
+        statement.setObject(1, cardID);
         return statement;
     }
 

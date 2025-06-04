@@ -5,8 +5,6 @@ import services.AuctionService;
 import services.UserService;
 
 import javax.naming.AuthenticationException;
-import java.io.File;
-import java.io.FileWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
@@ -19,36 +17,6 @@ public final class Menu {
     private Menu() throws SQLException {
         this.auctionsManager = AuctionService.getInstance();
         this.usersManager = UserService.getInstance();
-
-//        File f = new File("src/output.txt");
-//        Connection connection = DatabaseConnection.getInstance().getConnection();
-//
-//        try (FileWriter file = new FileWriter(f)) {
-//            connection.setAutoCommit(false);
-//            Auction auction = new Auction(500.0, "oifjreiog");
-//            auctionsManager.addAuction(auction);
-//
-//            User user = new Admin("Bob Smith");
-//            usersManager.addUser(user);
-//
-//            Card card = new Card("fjrifj", 4, 2026, user.getUserID());
-//            Item item = new Item("forjeifjoreh", user.getUserID(), auction.getAuctionID());
-//
-//            card.setBalance(300.0);
-//            user.addCard(card);
-//            auction.addItem(item);
-//
-//            file.write("Auction ID: " + auction.getAuctionID() + "\n");
-//            file.write("Card ID: " + card.getCode() + "\n");
-//            file.write("User ID: " + user.getUserID() + "\n");
-//            file.write("Item ID: " + item.getItemID() + "\n");
-//            connection.commit();
-//        } catch (Exception e) {
-//            connection.rollback();
-//            System.out.println(e.getMessage());
-//        } finally {
-//            connection.setAutoCommit(true);
-//        }
     }
 
     public static Menu getInstance() throws SQLException {
@@ -113,7 +81,7 @@ public final class Menu {
             UUID userID = getUserID();
             User currentUser = usersManager.getUser(userID);
 
-            if (!(currentUser instanceof Initiator) && !(currentUser instanceof Admin)) {
+            if (!(currentUser instanceof Bidder) && !(currentUser instanceof Admin)) {
                 throw new AuthenticationException("You are not allowed to perform this action");
             }
 
@@ -227,7 +195,7 @@ public final class Menu {
             Card card = user.getCard(UUID.fromString(scanner.nextLine()));
             card.setBalance(card.getBalance() - auction.getFare());
 
-            auction.addItem(new Item(description, user.getUserID(), auction.getAuctionID()));
+            auction.addItem(new Item(description, user.getUserID(), card.getCode(), auction.getAuctionID()));
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
@@ -246,7 +214,10 @@ public final class Menu {
 
             System.out.println("Insert item ID:");
             Item item = auction.getItem(UUID.fromString(scanner.nextLine()));
-            item.finishBidding();
+
+            if (user instanceof Initiator && !user.getUserID().equals(item.getUserID())) {
+                throw new AuthenticationException("Your are not allowed to perform this action");
+            }
 
             Bid lastBid = item.getLastBid();
             if (lastBid == null) {
@@ -254,25 +225,32 @@ public final class Menu {
                 return;
             }
 
-            Card card = user.getCard(lastBid.cardID());
             User lastUser = usersManager.getUser(lastBid.userID());
+            Card bidderCard = lastUser.getCard(lastBid.cardID());
+            Card ownerCard = usersManager.getUser(item.getUserID()).getCard(item.getCardID());
             Connection connection = DatabaseConnection.getInstance().getConnection();
-            boolean updateBlockedSum = false, updateBalance = false;
+            boolean updateBlockedSum = false, updateBalance = false, updateOwnerBalance = false;
 
             try {
                 connection.setAutoCommit(false);
                 lastUser.updateBlockedSum(lastBid.cardID(), lastBid.bidSum(), -1);
                 updateBlockedSum = true;
-                card.setBalance(card.getBalance() - lastBid.bidSum());
+                bidderCard.setBalance(bidderCard.getBalance() - lastBid.bidSum());
                 updateBalance = true;
+                ownerCard.setBalance(ownerCard.getBalance() + lastBid.bidSum());
+                updateOwnerBalance = true;
                 connection.commit();
+                item.finishBidding();
             } catch (Exception e) {
                 connection.rollback();
                 if (updateBlockedSum) {
                     lastUser.updateBlockedSumNoTransactions(lastBid.cardID(), lastBid.bidSum(), 1);
                 }
                 if (updateBalance) {
-                    card.setBalance(card.getBalance() + lastBid.bidSum());
+                    bidderCard.setBalance(bidderCard.getBalance() + lastBid.bidSum());
+                }
+                if (updateOwnerBalance) {
+                    ownerCard.setBalance(ownerCard.getBalance() - lastBid.bidSum());
                 }
                 throw new Exception(e.getMessage());
             } finally {
@@ -377,38 +355,29 @@ public final class Menu {
             System.out.println("Insert item ID:");
             UUID itemID = UUID.fromString(scanner.nextLine());
 
-            Auction auction = auctionsManager.getAuction(auctionID);
-            Item item = auction.getItem(itemID);
-            Bid lastBid = item.getLastBid();
-            User lastBidder = usersManager.getUser(lastBid.userID());
-            double sum = lastBid.bidSum();
-            UUID cardID = lastBid.cardID();
-            Connection connection = DatabaseConnection.getInstance().getConnection();
-            boolean finishBidding = false, updateBlockedSum = false;
-
-            try {
-                connection.setAutoCommit(false);
-                item.finishBidding();
-                finishBidding = true;
-                lastBidder.updateBlockedSum(cardID, sum, -1);
-                updateBlockedSum = true;
-                connection.commit();
-            } catch (Exception e) {
-                connection.rollback();
-                if (finishBidding) {
-                    item.rollbackBidding();
-                }
-                if (updateBlockedSum) {
-                    lastBidder.updateBlockedSumNoTransactions(cardID, sum, 1);
-                }
-                throw new SQLException(e.getMessage());
-            } finally {
-                connection.setAutoCommit(true);
-            }
+            auctionsManager.cancelBidding(auctionID, itemID);
 
         } catch(Exception e) {
             System.out.println(e.getMessage());
         }
+    }
+
+    public void deleteAuction() {
+        try {
+            User user = usersManager.getUser(getUserID());
+
+            if (!(user instanceof Admin)) {
+                throw new AuthenticationException("You cannot perform this operation");
+            }
+
+            Scanner scanner = new Scanner(System.in);
+            System.out.println("Insert auction ID:");
+            UUID auctionID = UUID.fromString(scanner.nextLine());
+            auctionsManager.deleteAuction(auctionID);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        }
+
     }
 
     public void printMenu() {
@@ -427,7 +396,8 @@ public final class Menu {
         System.out.println("13 - Show all product bids");
         System.out.println("14 - Show all personal bids");
         System.out.println("15 - Cancel bidding");
-        System.out.println("16 - Exit");
+        System.out.println("16 - Delete auction (and all its items and bids)");
+        System.out.println("17 - Exit");
     }
 
     @Override
