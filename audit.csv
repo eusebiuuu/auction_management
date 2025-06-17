@@ -87,3 +87,6 @@ read all auctions,2025-06-04 13:18:26
 delete items,2025-06-04 13:18:43
 delete items,2025-06-04 13:18:43
 delete auctions,2025-06-04 13:18:43
+read all users,2025-06-17 21:34:03
+read all auctions,2025-06-17 21:34:03
+create users,2025-06-17 21:34:11

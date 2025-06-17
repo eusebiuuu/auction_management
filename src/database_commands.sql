@@ -8,6 +8,7 @@ CREATE TABLE auctions (
 CREATE TABLE users (
     user_id UUID PRIMARY KEY,
     full_name VARCHAR(100) NOT NULL,
+    role VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

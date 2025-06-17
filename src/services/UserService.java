@@ -39,6 +39,8 @@ public class UserService extends GenericRepository<User> {
             this.create(user);
         } catch (Exception e) {
             throw new RuntimeException("Failed to persist user to database: " + e.getMessage());
+        } finally {
+            users.remove(user.getUserID());
         }
     }
 
