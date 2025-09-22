@@ -128,7 +128,7 @@ The system uses PostgreSQL with the following core tables:
 **Important**: This application follows an API-like design pattern where operations require UUID-based entity identification for authorization and validation.
 
 ### Testing Support
-- Use the provided `testing_data_support.txt` file to store and copy UUIDs for testing
+- Use the provided `temp.txt` file to store and copy UUIDs for testing
 - This approach ensures proper entity relationships and prevents unauthorized access
 
 ### Role Permissions
