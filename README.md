@@ -1,46 +1,155 @@
-## Sistem de gestiune a licitatiilor
+# Auction Management System
 
-**IMPORTANT: Aplicatia a fost gandita sa semene mai mult cu un API i.e. la fiecare operatie trebuie introduse cateva id-uri de tip UUID pentru a asigura autorizarea si existenta entitatilor. Pentru usurarea testarii, recomand salvarea id-urilor intr-un fisier separat si copierea de acolo in consola (eu am folosit [testing_data_support.txt](testing_data_support.txt)**).
+A comprehensive Java-based auction management platform that enables secure bidding operations with role-based access control and transactional integrity.
 
-### 1. Descriere generala
-- Proiectul reprezinta o aplicatie de gestionare a licitatiilor ce are in componenta sa urmatoarele entitati: Useri (Admini, Bidderi si Initiators), Auctions, Items, Bid, Card. Design-ul aplicatiei presupune ca o licitatie are una sau mai multe produse disponibile (marcate ca active), iar Bidder-ii si Admin-ii sunt singurii care pot licita pentru produse. Atunci cand se realizeaza o licitare, se va crea un obiect de tipul Bid care determina licitatia, produsul, licitatorul si suma licitata.   
-- O functionalitate relevanta, este cea de licitatie: pe scurt atunci cand se liciteaza, se va bloca in cardul licitatorului suma licitata astfel incat sa nu poata fi scoasa respectiva suma de pe card si sa nu mai existe bani pentru produsul licitat in cazul in care acea persoana este chiar cea castigatoare. In momentul in care o licitatie se termina, se va extrage efectiv suma de pe card sub forma unei tranzactii. Am gandit asa, deoarece in practica tranzactiile bancare sunt lente, iar in cazul licitatiilor este de multe ori nevoie de viteza.   
-- O alta functionalitate importanta, este cea de gestionare a erorilor de autentificare (atunci cand un user de tipul Initiator doreste sa liciteze sau un user de tipul Bidder sa adauge produse), cazuri de validare de input sau cazuri in care nu exista valori (de ex.: atunci cand se termina licitatia, iar lista este goala).  
-- O ultima functionalitate semnificativa reprezinta atomizarea tranzactiilor. Pe scurt, atunci cand utilizatorul foloseste anumite functii ce au in componenta mai multe etape (de ex., pentru functia de licitare, trebuie deblocata suma blocata pentru ultimul licitator, apoi blocata suma introdusa de utilizatorul curent, iar la final de creat o inregistrare in tabelul `bids` corespunzatoare bid-ului realizat de ultimul user) astfel incat, daca una din ele esueaza, sa se realizeze un `undo` pentru operatiile realizate pana atunci.
+## 🚀 Features
 
-### 2. Tehnologii folosite
-- Proiectul a fost implementat in Java cu SDK v21 si Language Level v18 (informatii luate din `File > Project Structure`).
-- Pentru baza de date am folosit PostgreSQL v17.5.
+### Core Functionality
+- **Multi-role User Management**: Support for Admins, Bidders, and Initiators with distinct permissions
+- **Auction House Management**: Create and manage auction institutions with configurable fees
+- **Item Listing**: Add items for auction with detailed descriptions and ownership tracking
+- **Real-time Bidding**: Secure bidding system with card-based payments
+- **Transaction Safety**: Atomic operations with rollback capabilities to ensure data consistency
 
-### 3. Installation setup
-Pentru a putea rula aplicatia local, va trebui sa realizati urmatorii pasi:
-- Instalati pachetul de postgresql jdbc de [aici](https://jdbc.postgresql.org/)
-- Adaugati-l in proiect mergand la `File > Project Structure > Libraries > +` si adaugand fisierul respectiv in Intellj.
-- Instalati si configurati o baza de date postgresql local
-- Schimbati valorile parametrilor de conexiune `DB_URL`, `DB_PASSWORD`, `DB_USER` din fisierul `/src/.env` cu parametrii bazei dumneavoastra de date (din moment ce baza de date este locala imi permit sa pun fisierul pe github).
+### Key Highlights
+- **Fund Blocking**: When a bid is placed, funds are temporarily blocked on the bidder's card to ensure payment availability
+- **Automated Settlement**: Upon auction completion, funds are automatically transferred from the winning bidder's account
+- **Permission System**: Role-based access control prevents unauthorized operations
+- **Audit Trail**: Complete transaction history and bid tracking for transparency
 
-### 4. Operatii disponibile
-- Create user: Creati un user din cele 3 tipuri disponibile. **Atentie!** User-ii au diferite permisiuni. Doar admin-ul are permisiuni absolute.
-- Delete user (userID): Se sterge un user.
-- Show all users (userID): Se afiseaza toti user-ii.
-- Show all cards (userID): Se afiseaza toate cardurile unui anumit user.
-- Add card (userID): Se adauga un card user-ului introdus.
-- Create auction: Se creeaza o institutie ce se ocupa cu licitatii ce are o anumita taxa.
-- Show all auctions: Se afiseaza toate institutiile de licitatii
-- Show all items: Se afiseaza toate item-ele pe care se poate licita la o anumita institutie
-- Add item: Se creeaza un item pentru care se va putea licita
-- Finish bidding: Se va termina licitatia pentru un anumit item. Asta inseamna ca ultimului user i se va scadea din cont suma licitata.
-- Make bid: User-ul introdus va putea licita la o anumita institutie, pentru un anumit produs, cu un anumit card.
-- Add sum to card: Se va adauga o suma de bani pe cardul introdus
-- Show all product bids: Se vor afisa toate bid-urile pentru un anumit produs. Permis doar admin-ilor si owner-ului.
-- Show all made bids: Se vor afisa toate bid-urile realizate pentru licitatii active.
-- Cancel bidding: Se va anula licitatia pentru produsul introdus (niciun bidder nu va pierde bani)
-- Delete auction: Se va sterge institutia de licitare introdusa impreuna cu toate licitatiile si bid-urile aferente. Sumele blocate user-ilor vor fi restituite.
+## 🏗️ Architecture
 
-### 5. Entitatile
-- auction: list of items, tax per product, name
-- bid: userID, bidSum, cardID, itemID
-- item: author, initiatorID, cardID, description, amount, list of bids
-- user (admin, initiator, bidder): fullName, list of cards
-- card: code, name, expiration month, expiration year, balance, blockedSum
-- Menu (singleton): list of auctions ordered by tax, list of users
+### Entity Relationships
+- **Auctions**: Container for items with configurable transaction fees
+- **Users**: Three role types (Admin, Bidder, Initiator) with different privileges
+- **Items**: Products available for bidding, linked to auctions and initiators
+- **Bids**: Individual bid records with user, item, and payment card associations
+- **Cards**: Payment methods with balance tracking and fund blocking capabilities
+
+### Database Schema
+The system uses PostgreSQL with the following core tables:
+- `auctions` - Auction house information
+- `users` - User accounts with role definitions
+- `cards` - Payment card details with balance management
+- `items` - Auction items with status tracking
+- `bids` - Bidding history and current bid tracking
+
+## 🛠️ Technology Stack
+
+- **Language**: Java (SDK v21, Language Level v18)
+- **Database**: PostgreSQL v17.5
+- **JDBC**: PostgreSQL JDBC Driver
+- **Architecture**: MVC pattern with service layer abstraction
+
+## 📦 Installation & Setup
+
+### Prerequisites
+1. Java Development Kit (JDK) 21 or higher
+2. PostgreSQL 17.5 or compatible version
+3. IntelliJ IDEA or compatible IDE
+
+### Setup Instructions
+
+1. **Database Setup**
+   ```bash
+   # Install PostgreSQL and create a local database
+   createdb auction_management
+   ```
+
+2. **JDBC Driver Installation**
+   - Download the PostgreSQL JDBC driver from [jdbc.postgresql.org](https://jdbc.postgresql.org/)
+   - In IntelliJ: Go to `File > Project Structure > Libraries > +` and add the JDBC JAR file
+
+3. **Database Configuration**
+   - Create a `.env` file in the `/src` directory
+   - Configure your database connection parameters:
+     ```
+     DB_URL=jdbc:postgresql://localhost:5432/auction_management
+     DB_USER=your_username
+     DB_PASSWORD=your_password
+     ```
+
+4. **Initialize Database Schema**
+   - Execute the SQL commands from `src/database_commands.sql` in your PostgreSQL database
+
+5. **Run the Application**
+   - Compile and run the `Main.java` class
+   - Follow the interactive menu to perform operations
+
+## 🎮 Available Operations
+
+| Operation | Description | Required Role |
+|-----------|-------------|---------------|
+| **User Management** |
+| Create User | Register new users (Admin, Bidder, Initiator) | Any |
+| Delete User | Remove user accounts | Admin |
+| Show All Users | Display registered users | Any |
+| **Card Management** |
+| Show All Cards | Display user's payment cards | Owner/Admin |
+| Add Card | Register new payment card | Owner |
+| Add Funds | Add money to card balance | Owner |
+| **Auction Management** |
+| Create Auction | Establish new auction house | Admin |
+| Show All Auctions | List available auction houses | Any |
+| Delete Auction | Remove auction and refund blocked funds | Admin |
+| **Item Management** |
+| Add Item | List item for auction | Initiator |
+| Show All Items | Display items in auction house | Any |
+| **Bidding Operations** |
+| Make Bid | Place bid on item | Bidder/Admin |
+| Show Product Bids | View all bids for specific item | Admin/Owner |
+| Show Made Bids | Display user's active bids | Owner/Admin |
+| Finish Bidding | Complete auction and process payment | Admin |
+| Cancel Bidding | Cancel auction and refund blocked funds | Admin |
+
+## 🔐 Security & Authorization
+
+**Important**: This application follows an API-like design pattern where operations require UUID-based entity identification for authorization and validation.
+
+### Testing Support
+- Use the provided `testing_data_support.txt` file to store and copy UUIDs for testing
+- This approach ensures proper entity relationships and prevents unauthorized access
+
+### Role Permissions
+- **Admin**: Full system access, can perform all operations
+- **Bidder**: Can place bids, manage own cards and view own data
+- **Initiator**: Can add items for auction, manage own cards and view own data
+
+## 🔄 Transaction Management
+
+The system implements atomic transactions for complex operations:
+- **Bid Placement**: Unblocks previous bidder's funds → Blocks new bidder's funds → Creates bid record
+- **Auction Completion**: Transfers funds from winner → Updates item status → Records transaction
+- **Rollback Support**: If any step fails, all previous operations are automatically reversed
+
+## 📊 Data Models
+
+### Core Entities
+```java
+// Auction: Auction house with fee structure
+auction: { auctionId, name, fare, items[] }
+
+// User: System participant with role-based permissions  
+user: { userId, fullName, role, cards[] }
+
+// Item: Auctionable product
+item: { itemId, description, initiatorId, auctionId, active, bids[] }
+
+// Bid: Individual bid record
+bid: { bidId, itemId, userId, cardId, bidSum, timestamp }
+
+// Card: Payment method with balance tracking
+card: { cardId, userId, holderName, expirationMonth, expirationYear, balance, blockedSum }
+```
+
+## 🤝 Contributing
+
+This project demonstrates enterprise-level auction management concepts including:
+- Transactional integrity in financial operations
+- Role-based access control implementation
+- Real-time fund blocking and settlement
+- Comprehensive audit trail maintenance
+
+---
+
+*For development questions or issues, please refer to the source code documentation and database schema definitions.*
