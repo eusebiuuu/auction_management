@@ -2,6 +2,27 @@
 
 A comprehensive Java-based auction management platform that enables secure bidding operations with role-based access control and transactional integrity.
 
+## 📚 Table of Contents
+
+- [Features](#-features)
+  - [Core Functionality](#core-functionality)
+  - [Key Highlights](#key-highlights)
+- [Architecture](#️-architecture)
+  - [Entity Relationships](#entity-relationships)
+  - [Database Schema](#database-schema)
+- [Technology Stack](#️-technology-stack)
+- [Installation & Setup](#-installation--setup)
+  - [Prerequisites](#prerequisites)
+  - [Setup Instructions](#setup-instructions)
+- [Available Operations](#-available-operations)
+- [Security & Authorization](#-security--authorization)
+  - [Testing Support](#testing-support)
+  - [Role Permissions](#role-permissions)
+- [Transaction Management](#-transaction-management)
+- [Data Models](#-data-models)
+  - [Core Entities](#core-entities)
+- [Wrap-up](#wrap-up)
+
 ## 🚀 Features
 
 ### Core Functionality
@@ -142,7 +163,7 @@ bid: { bidId, itemId, userId, cardId, bidSum, timestamp }
 card: { cardId, userId, holderName, expirationMonth, expirationYear, balance, blockedSum }
 ```
 
-## 🤝 Contributing
+## Wrap-up
 
 This project demonstrates enterprise-level auction management concepts including:
 - Transactional integrity in financial operations
